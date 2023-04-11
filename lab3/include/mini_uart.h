@@ -35,6 +35,8 @@
 #define GPPUDCLK0       ((volatile unsigned int*)(MMIO_BASE+0x00200098))
 #define GPPUDCLK1       ((volatile unsigned int*)(MMIO_BASE+0x0020009C))
 
+#define ENABLE_IRQs1    ((volatile unsigned int*)(MMIO_BASE+0x0000b210))
+
 void uart_init();
 char uart_recv();
 void uart_send(unsigned int c);

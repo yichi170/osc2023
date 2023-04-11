@@ -40,53 +40,75 @@
     add sp, sp, 32 * 8
 .endm
 
-exception_handler:
-lel_exception_sync:
+invalid_exception_handler:
+  save_all
+  mrs x0, spsr_el1
+  mrs x1, elr_el1
+  mrs x2, esr_el1
+  mov x3, 1
+  bl  print_exception
+  load_all
+  eret
+
+lower_el_sync_exception:
     save_all
     mrs x0, spsr_el1
     mrs x1, elr_el1
     mrs x2, esr_el1
+    mov x3, 0
     bl  print_exception
     load_all
     eret
 
+el1_irq_exception_handler:
+  save_all
+  bl c_el1_irq_handler
+  load_all
+  eret
+
+irq_exception_handler:
+  save_all
+  bl c_el0_irq_handler
+  load_all
+  eret
+
 .align 11 // vector table should be aligned to 0x800
-.global exception_vector_table
+.globl exception_vector_table
 exception_vector_table:
-  b exception_handler // branch to a handler function. // sync
+  b invalid_exception_handler // branch to a handler function. // sync, Current EL with SP0
   .align 7 // entry size is 0x80, .align will pad 0
-  b exception_handler // irq
+  b invalid_exception_handler // irq
   .align 7
-  b exception_handler // fiq
+  b invalid_exception_handler // fiq
   .align 7
-  b exception_handler // serr
-  .align 7
-
-  b exception_handler // sync
-  .align 7
-  b exception_handler // irq
-  .align 7
-  b exception_handler // fiq
-  .align 7
-  b exception_handler // serr
+  b invalid_exception_handler // serr
   .align 7
 
-  b lel_exception_sync // sync
+  b invalid_exception_handler // sync, Current EL with SPx
   .align 7
-  b exception_handler // irq
+  b el1_irq_exception_handler // irq
   .align 7
-  b exception_handler // fiq
+  b invalid_exception_handler // fiq
   .align 7
-  b exception_handler // serr
+  b invalid_exception_handler // serr
   .align 7
 
-  b exception_handler // sync
+  b lower_el_sync_exception // sync, Lower EL using AArch64
   .align 7
-  b exception_handler // irq
+  b irq_exception_handler // irq
   .align 7
-  b exception_handler // fiq
+  b invalid_exception_handler // fiq
   .align 7
-  b exception_handler // serr
+  b invalid_exception_handler // serr
+  .align 7
+
+  b invalid_exception_handler // sync, Lower EL using AArch32
+  .align 7
+  b invalid_exception_handler // irq
+  .align 7
+  b invalid_exception_handler // fiq
+  .align 7
+  b invalid_exception_handler // serr
   .align 7
 
 .globl set_exception_vector_table

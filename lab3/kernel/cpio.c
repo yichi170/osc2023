@@ -6,6 +6,8 @@
 
 #define CPIO_HEADER_MAGIC "070701"
 
+extern void core_timer_enable();
+extern void from_el1_to_el0(unsigned int, unsigned int);
 static void *INITRD_ADDR = 0;
 
 void initramfs_callback(const char *nodename, const char *propname, void *prop_val) {
@@ -111,7 +113,7 @@ void cpio_cat(char *command, int len) {
 void execute_usrprogram(char *file) {
   char *addr = INITRD_ADDR;
   char *new_addr;
-  uint64_t *program_addr = addr;
+  char *program_addr = (char *)addr;
   char filename[2 * sizeof("TRAILER!!!")];
   char exec_file[2 * sizeof("TRAILER!!!")];
   while (1) {
@@ -127,7 +129,7 @@ void execute_usrprogram(char *file) {
       }
 
       addr += sizeof(cpio_newc_header_t) + filename_size;
-      program_addr = (uint64_t *)(addr);
+      program_addr = (void *)(addr);
       logdf("program_addr: %#X\n", program_addr);
       strcpy(exec_file, filename);
     }
@@ -140,17 +142,8 @@ void execute_usrprogram(char *file) {
   }
 
   logdf("found %s in the file system, and ready to execute it\n", file);
+  logdf("program_addr 2: %#X\n", program_addr);
 
-  __asm volatile(// 0x805f8
-    "mov     x0, 0x3c0\n\t"
-    "msr     spsr_el1, x0\n\t"
-    "msr     elr_el1, %[progaddr]\n\t"
-    :: [progaddr] "r" (program_addr)
-  );
-
-  __asm volatile(
-    "msr     sp_el0, %[stkaddr]\n\t"
-    "eret"
-    :: [stkaddr] "r" (addr + 0x200)
-  );
+  core_timer_enable();
+  from_el1_to_el0((unsigned int)program_addr, 0x40000);
 }

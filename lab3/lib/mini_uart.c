@@ -50,4 +50,5 @@ void uart_init() {
   }
   *GPPUDCLK0 = 0;   // flush GPIO setup
   *AUX_MU_CNTL = 3; // enable Tx, Rx
+  *ENABLE_IRQs1 = (1 << 29);
 }

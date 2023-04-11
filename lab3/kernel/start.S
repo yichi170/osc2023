@@ -41,12 +41,3 @@ _clean_bss:
 _kernel:
     bl      kernel_main
     b       _loop
-
-from_el2_to_el1:
-    mov     x0, (1 << 31)
-    msr     hcr_el2, x0
-    mov     x0, 0x3c5
-    // 0x3c5 = 0000 0000 0000 0000 0000 0011 1100 0101
-    msr     spsr_el2, x0
-    msr     elr_el2, lr
-    eret

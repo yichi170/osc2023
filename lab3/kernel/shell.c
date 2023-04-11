@@ -6,6 +6,9 @@
 #include "mailbox.h"
 #include "reboot.h"
 #include "cpio.h"
+#include "malloc.h"
+#include "timer.h"
+#include "exception.h"
 
 #define BUF_SIZE 32
 
@@ -21,17 +24,33 @@ void print_help() {
   print("ls\t: list directory contents\n");
   print("cat [file ...]\t: concatenate and print files\n");
   print("exec file\t: execute the executable file\n");
+  print("test_async\t: test async print\n");
 }
 
 void print_unsupport(char *buf) {
   printf("Command not found: %s\n", buf);
 }
 
-void print_exception(uint64_t spsr, uint64_t elr, uint64_t esr) {
+void print_exception(uint64_t spsr, uint64_t elr, uint64_t esr, uint64_t invalid) {
+  if (invalid == 1) {
+    print("The exception didn't handle\n");
+    return;
+  }
+
   print("===== exception info =====\n");
   printf("spsr_el1:\t%#X\n", spsr);
   printf("elr_el1:\t%#X\n", elr);
   printf("esr_el1:\t%#X\n", esr);
+}
+
+void print_timer_irq(uint64_t frq_timer, uint64_t cnt_timer) {
+  print("===== timer IRQ info =====\n");
+  printf("current timestamp:\t%#X\n", cnt_timer / frq_timer);
+}
+
+void print_msg(void *data) {
+  print((char *)data);
+  print("\n");
 }
 
 void shell() {
@@ -78,6 +97,29 @@ void shell() {
     else if (strstartwith(buf, "exec ") == 0) {
       char *file = buf + 5;
       execute_usrprogram(file);
+    }
+    else if (streq(buf, "test_async") == 0) {
+      print("test async: expected output = Hello World\n");
+      async_print("Hello World\n");
+      print("input five characters to test the async read: ");
+      char ar[6];
+      async_read(ar, 5);
+      ar[5] = '\0';
+      printf("\nreceived: %s\n", ar);
+    }
+    else if (strstartwith(buf, "setTimeout") == 0) {
+      char *msg = simple_malloc(strlen(buf));
+      char *msg_ptr = msg;
+      char *ptr = buf + strlen("setTimeout") + 1;
+      
+      while (*ptr) {
+        *msg_ptr++ = *ptr++;
+        if (*ptr == ' ') {
+          break;
+        }
+      }
+      int sec = strtoi(++ptr, 10);
+      add_timer(print_msg, msg, sec);
     }
     else {
       print_unsupport(buf);
