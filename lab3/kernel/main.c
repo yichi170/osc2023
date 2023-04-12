@@ -10,6 +10,6 @@ void kernel_main() {
   set_exception_vector_table();
   uart_init();
   fdt_traverse(initramfs_callback);
-  // core_timer_enable();
+  core_timer_enable();
   shell();
 }

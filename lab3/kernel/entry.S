@@ -41,6 +41,7 @@
 .endm
 
 invalid_exception_handler:
+  msr DAIFSet, 0xf // disable interrupt
   save_all
   mrs x0, spsr_el1
   mrs x1, elr_el1
@@ -48,17 +49,20 @@ invalid_exception_handler:
   mov x3, 1
   bl  print_exception
   load_all
+  msr DAIFClr, 0xf // enable interrupt
   eret
 
 lower_el_sync_exception:
-    save_all
-    mrs x0, spsr_el1
-    mrs x1, elr_el1
-    mrs x2, esr_el1
-    mov x3, 0
-    bl  print_exception
-    load_all
-    eret
+  msr DAIFSet, 0xf // disable interrupt
+  save_all
+  mrs x0, spsr_el1
+  mrs x1, elr_el1
+  mrs x2, esr_el1
+  mov x3, 0
+  bl  print_exception
+  load_all
+  msr DAIFClr, 0xf // enable interrupt
+  eret
 
 el1_irq_exception_handler:
   save_all
@@ -67,9 +71,11 @@ el1_irq_exception_handler:
   eret
 
 irq_exception_handler:
+  msr DAIFSet, 0xf // disable interrupt
   save_all
   bl c_el0_irq_handler
   load_all
+  msr DAIFClr, 0xf // enable interrupt
   eret
 
 .align 11 // vector table should be aligned to 0x800

@@ -78,11 +78,11 @@ void gpu_interrupt_handler() {
 void c_el1_irq_handler() { // el1
   volatile uint64_t irq_src = *CORE0_IRQ_SRC;
   if (irq_src & (1 << 8)) { // GPU interrupt
-    // print("GPU interrupt\n");
     gpu_interrupt_handler();
   } else if (irq_src & (1 << 1)) { // CNTPNSIRQ interrupt
-    // print("timer interrupt\n");
+    __asm volatile("msr DAIFSet, 0xf\t\n");
     el1_timer_irq_handler();
+    __asm volatile("msr DAIFClr, 0xf\t\n");
   } else {
     print("Unknown interrupt\n");
   }

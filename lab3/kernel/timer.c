@@ -6,7 +6,7 @@
 timer_event_t *time_events;
 
 uint64_t get_timer() {
-  uint64_t timer;
+  volatile uint64_t timer;
   __asm volatile(
     "mrs %0, cntpct_el0\n\t": "=r" (timer)
   );
@@ -14,7 +14,7 @@ uint64_t get_timer() {
 }
 
 uint64_t get_freq() {
-  uint64_t freq;
+  volatile uint64_t freq;
   __asm volatile(
     "mrs %0, cntfrq_el0\n\t": "=r" (freq)
   );
@@ -23,9 +23,8 @@ uint64_t get_freq() {
 
 void set_timeout(uint64_t timeout) {
   __asm volatile(
-    "mov x1, %[time]\n\t"
-    "msr cntp_tval_el0, x1\n\t"
-    :: [time] "r" (timeout)
+    "msr cntp_tval_el0, %0\n\t"
+    :: "r" (timeout)
   );
 }
 
@@ -36,6 +35,7 @@ void add_timer(void (*callback)(void *), void *data, uint64_t timeout) {
   new_event->timeout = timeout * get_freq() + get_timer();
   new_event->event = callback;
   new_event->data = data;
+  new_event->next = (void *)0;
 
   bool reset_next_timeout = false;
 
@@ -67,7 +67,9 @@ void el1_timer_irq_handler() {
     __asm volatile(
       "mrs x2, cntfrq_el0\n\t"
       "mov x1, #0x0000FFFF\n\t"
+      "mrs x0, cntpct_el0\n\t"
       "mul x2, x2, x1\n\t"
+      "mul x2, x2, x0\n\t"
       "msr cntp_tval_el0, x2\n\t"
     );
     return;

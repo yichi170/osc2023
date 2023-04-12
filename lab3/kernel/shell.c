@@ -12,6 +12,8 @@
 
 #define BUF_SIZE 32
 
+extern void core_timer_disable();
+
 void print_hello() {
   print("Hello World!\n");
 }
@@ -25,6 +27,8 @@ void print_help() {
   print("cat [file ...]\t: concatenate and print files\n");
   print("exec file\t: execute the executable file\n");
   print("test_async\t: test async print\n");
+  print("timer [test/end]: test/shutdown timer\n");
+  print("timer <msg> <sec>: set timer\n");
 }
 
 void print_unsupport(char *buf) {
@@ -33,7 +37,7 @@ void print_unsupport(char *buf) {
 
 void print_exception(uint64_t spsr, uint64_t elr, uint64_t esr, uint64_t invalid) {
   if (invalid == 1) {
-    print("The exception didn't handle\n");
+    print("Unexpected exception\n");
     return;
   }
 
@@ -107,19 +111,31 @@ void shell() {
       ar[5] = '\0';
       printf("\nreceived: %s\n", ar);
     }
-    else if (strstartwith(buf, "setTimeout") == 0) {
-      char *msg = simple_malloc(strlen(buf));
+    else if (strstartwith(buf, "timer") == 0) {
+      char *msg = simple_malloc(BUF_SIZE * sizeof(char)); // need to align with 32-bit
       char *msg_ptr = msg;
-      char *ptr = buf + strlen("setTimeout") + 1;
-      
+      char *ptr = buf + strlen("timer") + 1;
+
       while (*ptr) {
         *msg_ptr++ = *ptr++;
         if (*ptr == ' ') {
           break;
         }
       }
-      int sec = strtoi(++ptr, 10);
-      add_timer(print_msg, msg, sec);
+      *msg_ptr = '\0';
+      if (streq(msg, "test") == 0) {
+        print("start to test timer\n");
+        add_timer(print_msg, "msg1", 3);
+        add_timer(print_msg, "msg2", 2);
+        add_timer(print_msg, "msg3", 1);
+      } else if (streq(msg, "end") == 0) {
+        core_timer_disable();
+        continue;
+      } else {
+        int sec = strtoi(++ptr, 10);
+        printf("print %s after %d seconds\n", msg, sec);
+        add_timer(print_msg, msg, sec);
+      }
     }
     else {
       print_unsupport(buf);

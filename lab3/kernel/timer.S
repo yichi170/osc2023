@@ -19,3 +19,12 @@ core_timer_irq_handler:
   mrs x1, cntpct_el0
   bl  print_timer_irq // void print_timer_irq(uint64_t frq_timer, uint64_t cnt_timer)
   ret
+
+.globl core_timer_disable
+core_timer_disable:
+  mov x0, 0
+  msr cntp_ctl_el0, x0 // disable
+  mov x0, 0
+  ldr x1, =CORE0_TIMER_IRQ_CTRL
+  str w0, [x1] // unmask timer interrupt
+  ret
