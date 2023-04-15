@@ -12,11 +12,8 @@
 
 #define BUF_SIZE 32
 
+extern void core_timer_enable();
 extern void core_timer_disable();
-
-void print_hello() {
-  print("Hello World!\n");
-}
 
 void print_help() {
   print("help\t: print this help menu\n");
@@ -27,34 +24,18 @@ void print_help() {
   print("cat [file ...]\t: concatenate and print files\n");
   print("exec file\t: execute the executable file\n");
   print("test_async\t: test async print\n");
-  print("timer [test/end]: test/shutdown timer\n");
+  print("timer [start/stop]: start/shutdown timer\n");
+  print("timer [test]: test timer\n");
   print("timer <msg> <sec>: set timer\n");
 }
 
-void print_unsupport(char *buf) {
-  printf("Command not found: %s\n", buf);
-}
-
 void print_exception(uint64_t spsr, uint64_t elr, uint64_t esr, uint64_t invalid) {
-  if (invalid == 1) {
+  if (invalid == 1)
     print("Unexpected exception\n");
-    return;
-  }
-
   print("===== exception info =====\n");
   printf("spsr_el1:\t%#X\n", spsr);
   printf("elr_el1:\t%#X\n", elr);
   printf("esr_el1:\t%#X\n", esr);
-}
-
-void print_timer_irq(uint64_t frq_timer, uint64_t cnt_timer) {
-  print("===== timer IRQ info =====\n");
-  printf("current timestamp:\t%#X\n", cnt_timer / frq_timer);
-}
-
-void print_msg(void *data) {
-  print((char *)data);
-  print("\n");
 }
 
 void shell() {
@@ -72,9 +53,10 @@ void shell() {
       print_help();
     }
     else if (streq(buf, "hello") == 0) {
-      print_hello();
+      print("Hello World!\n");
     }
     else if (streq(buf, "reboot") == 0) {
+      print("rebooting...\n");
       reset(100);
     }
     else if (streq(buf, "info") == 0) {
@@ -124,13 +106,11 @@ void shell() {
       }
       *msg_ptr = '\0';
       if (streq(msg, "test") == 0) {
-        print("start to test timer\n");
-        add_timer(print_msg, "msg1", 3);
-        add_timer(print_msg, "msg2", 2);
-        add_timer(print_msg, "msg3", 1);
-      } else if (streq(msg, "end") == 0) {
+        test_timer();
+      } else if (streq(msg, "start") == 0) {
+        core_timer_enable();
+      } else if (streq(msg, "stop") == 0) {
         core_timer_disable();
-        continue;
       } else {
         int sec = strtoi(++ptr, 10);
         printf("print %s after %d seconds\n", msg, sec);
@@ -138,7 +118,7 @@ void shell() {
       }
     }
     else {
-      print_unsupport(buf);
+      printf("Command not found: %s\n", buf);
     }
   }
 }

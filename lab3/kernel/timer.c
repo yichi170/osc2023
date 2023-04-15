@@ -5,18 +5,20 @@
 
 timer_event_t *time_events;
 
-uint64_t get_timer() {
-  volatile uint64_t timer;
+uint64_t get_cycle() {
+  volatile uint64_t cycle;
   __asm volatile(
-    "mrs %0, cntpct_el0\n\t": "=r" (timer)
+    "mrs %0, cntpct_el0\n\t"
+    : "=r" (cycle)
   );
-  return timer;
+  return cycle;
 }
 
 uint64_t get_freq() {
   volatile uint64_t freq;
   __asm volatile(
-    "mrs %0, cntfrq_el0\n\t": "=r" (freq)
+    "mrs %0, cntfrq_el0\n\t"
+    : "=r" (freq)
   );
   return freq;
 }
@@ -32,7 +34,7 @@ void add_timer(void (*callback)(void *), void *data, uint64_t timeout) {
 
   timer_event_t *new_event = (timer_event_t *)simple_malloc(sizeof(timer_event_t));
 
-  new_event->timeout = timeout * get_freq() + get_timer();
+  new_event->timeout = timeout * get_freq();
   new_event->event = callback;
   new_event->data = data;
   new_event->next = (void *)0;
@@ -56,22 +58,38 @@ void add_timer(void (*callback)(void *), void *data, uint64_t timeout) {
     new_event->next = next;
   }
 
-  if (reset_next_timeout) {
+  if (reset_next_timeout)
     set_timeout(new_event->timeout);
-  }
 }
 
+void print_msg(void *data) {
+  print((char *)data);
+  print("\n");
+}
+
+void test_timer() {
+  print("start to test timer\n");
+  add_timer(print_msg, "msg1", 3);
+  add_timer(print_msg, "msg2", 2);
+  add_timer(print_msg, "msg3", 1);
+}
+
+void print_timer_irq() {
+  uint64_t freq = get_freq();
+  uint64_t cyc = get_cycle();
+  print("===== timer IRQ info =====\n");
+  printf("CPU frequency:\t%#X\n", freq);
+  printf("current time:\t%d\n", cyc / freq);
+}
 
 void el1_timer_irq_handler() {
   if (time_events == (void *)0) {
     __asm volatile(
       "mrs x2, cntfrq_el0\n\t"
-      "mov x1, #0x0000FFFF\n\t"
-      "mrs x0, cntpct_el0\n\t"
-      "mul x2, x2, x1\n\t"
-      "mul x2, x2, x0\n\t"
+      "add x2, x2, x2\n\t"
       "msr cntp_tval_el0, x2\n\t"
     );
+    print_timer_irq();
     return;
   }
 
