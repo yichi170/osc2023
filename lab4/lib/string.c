@@ -116,3 +116,10 @@ int strlen(const char *str) {
   }
   return len;
 }
+
+void memset(void *dst, char c, uint32_t len) {
+  char* dup = (char*)dst;
+  while (len--) {
+    *dup++ = c;
+  }
+}

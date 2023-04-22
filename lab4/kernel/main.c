@@ -2,6 +2,7 @@
 #include "devtree.h"
 #include "cpio.h"
 #include "page_alloc.h"
+#include "mm_alloc.h"
 #include "shell.h"
 
 extern void set_exception_vector_table();
@@ -13,5 +14,6 @@ void kernel_main() {
   fdt_traverse(initramfs_callback);
   // core_timer_enable();
   init_allocator();
+  init_pools();
   shell();
 }

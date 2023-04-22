@@ -9,6 +9,7 @@
 #include "malloc.h"
 #include "timer.h"
 #include "exception.h"
+#include "mm_alloc.h"
 #include "page_alloc.h"
 
 #define BUF_SIZE 32
@@ -29,6 +30,7 @@ void print_help() {
   print("timer [test]: test timer\n");
   print("timer <msg> <sec>: set timer\n");
   print("demo-frame: test the buddy system\n");
+  print("demo-pool: test the memory pool\n");
 }
 
 void print_msg(void *data) {
@@ -122,6 +124,9 @@ void shell() {
     }
     else if (streq(buf, "demo-frame") == 0) {
       demo_frame();
+    }
+    else if (streq(buf, "demo-pool") == 0) {
+      demo_pool();
     }
     else {
       printf("Command not found: %s\n", buf);
