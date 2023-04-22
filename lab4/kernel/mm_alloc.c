@@ -56,9 +56,9 @@ void init_pools() {
   }
 }
 
-void *malloc(uint64_t size) {
+void *kmalloc(uint64_t size) {
   if (size > 1024)
-    return kmalloc(size);
+    return frame_malloc(size);
 
   int reqorder = 0; // 0: 32, 1: 64, 2: 128, 3: 256, 4: 512, 5: 1024
   for (int c = 32; c < size; c <<= 1, reqorder++);
@@ -71,7 +71,7 @@ void *malloc(uint64_t size) {
 }
 
 void mem_chunk_create(mm_pool_t *pool) {
-  page_t *page = malloc(FRAME_SIZE);
+  page_t *page = frame_malloc(FRAME_SIZE);
   page->next = pool->pages;
   if (pool->pages != NULL)
     pool->pages->prev = page;
@@ -106,11 +106,7 @@ void *mem_chunk_alloc(mm_pool_t *pool) {
   return NULL;
 }
 
-void mem_chunk_free(void *addr) {
-  page_t *page = (page_t *)((uint64_t)addr & ~(FRAME_SIZE - 1));
-  mm_pool_t *pool = &pools[page->pool_id];
-  int idx = (uint64_t)(addr - (void *)page - sizeof(page_t)) / pool->chunk_size;
-
+void mem_chunk_free(page_t *page, int idx) {
   if ((page->bitmap[idx / 64] & (1 << idx % 64)) != 0) {
     page->bitmap[idx / 64] &= ~(1 << (idx % 64));
     page->num_free++;
@@ -118,6 +114,14 @@ void mem_chunk_free(void *addr) {
 
   printf("[INFO] free chunk: idx=%d, size=%d, page address: %#X\n", 
           idx, (1 << (page->pool_id + 5)), (uint64_t)(void *)page);
+}
+
+void kfree(void *addr) {
+  page_t *page = (page_t *)((uint64_t)addr & ~(FRAME_SIZE - 1));
+  mm_pool_t *pool = &pools[page->pool_id];
+  int idx = (uint64_t)(addr - (void *)page - sizeof(page_t)) / pool->chunk_size;
+
+  mem_chunk_free(page, idx);
 
   // check whether the page is still in use
   for (int i = 0; i < 2; i++) {
@@ -132,7 +136,7 @@ void mem_chunk_free(void *addr) {
       pool_pages->prev->next = pool_pages->next;
       pool_pages->next->prev = pool_pages->prev;
       pools[page->pool_id].pages = pool_pages->next;
-      kfree(page);
+      free_frame(page);
       break;
     }
     pool_pages = pool_pages->next;
@@ -140,13 +144,16 @@ void mem_chunk_free(void *addr) {
 }
 
 void demo_pool() {
-  void *A = malloc(32);
-  void *B = malloc(32);
-  void *C = malloc(64);
-  printf("[DEMO] malloc-A: size=32, address=%#X\n", A);
-  printf("[DEMO] malloc-B: size=32, address=%#X\n", B);
-  printf("[DEMO] malloc-C: size=64, address=%#X\n", C);
-  mem_chunk_free(A);
-  mem_chunk_free(B);
-  mem_chunk_free(C);
+  void *A = kmalloc(32);
+  void *B = kmalloc(32);
+  void *C = kmalloc(64);
+  void *D = kmalloc(64);
+  printf("[DEMO] kmalloc A: size=32, address=%#X\n", A);
+  printf("[DEMO] kmalloc B: size=32, address=%#X\n", B);
+  printf("[DEMO] kmalloc C: size=64, address=%#X\n", C);
+  printf("[DEMO] kmalloc D: size=64, address=%#X\n", D);
+  kfree(A);
+  kfree(B);
+  kfree(C);
+  kfree(D);
 }

@@ -1,6 +1,6 @@
 #include "malloc.h"
 
-#define MAX_HEAP_SIZE 0x200
+#define MAX_HEAP_SIZE 0x10000000
 
 extern char __heap_start;
 static char *heap_ptr = &__heap_start;

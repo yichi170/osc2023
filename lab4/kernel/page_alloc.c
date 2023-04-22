@@ -43,8 +43,10 @@ int allocate_frame(unsigned int reqorder) {
       }
     }
 
-    if (upper_free_order == -1)
+    if (upper_free_order == -1) {
+      printf("[ERR] It seems that no free frame can be allocated\n");
       return -1;
+    }
 
     while (upper_free_order > reqorder) {
       /* move the upper free frame to the next, and ready to split the current upper free frame */
@@ -56,7 +58,6 @@ int allocate_frame(unsigned int reqorder) {
       int r_off = pow(2, l_frame->val - 1);
 
       struct frame *r_frame = &frame_array[l_frame->index + r_off];
-
       l_frame->val -= 1;
       l_frame->prev = NULL;
       l_frame->next = r_frame;
@@ -100,11 +101,12 @@ void deallocate_frame(int idx) {
 
   int target_order = target->val;
 
-  for (int order = target_order; order < MAX_ORDER; order++) {
+  for (int order = target_order; order <= MAX_ORDER; order++) {
     int buddy_idx = idx ^ (1 << order);
-    struct frame *buddy = &frame_array[buddy_idx];
 
-    if (buddy->state == ALLOCATABLE && order < MAX_ORDER && order == target->val) {
+    if (buddy_idx < NUM_FRAME && frame_array[buddy_idx].state == ALLOCATABLE &&
+        order < MAX_ORDER && order == target->val) {
+      struct frame *buddy = &frame_array[buddy_idx];
       printf("[INFO] merge frame %d with frame %d (order: %d -> %d)\n", idx, buddy_idx, order, order + 1);
 
       /* remove buddy from the frame_list[order] */
@@ -162,9 +164,11 @@ inline int mm_addr_to_id(void *mm_addr) {
   return ((uint64_t)mm_addr - MEM_START) / FRAME_SIZE;
 }
 
-void *kmalloc(uint64_t size) {
+void *frame_malloc(uint64_t size) {
   int reqorder = 0;
   for (int c = 1; c * FRAME_SIZE < size; c <<= 1, reqorder++);
+
+  printf("[INFO] request a frame in order#%d\n", reqorder);
 
   int idx = allocate_frame(reqorder);
   void *mm_addr = id_to_mm_addr(idx);
@@ -172,7 +176,7 @@ void *kmalloc(uint64_t size) {
   return mm_addr;
 }
 
-void kfree(void *addr) {
+void free_frame(void *addr) {
   int idx = mm_addr_to_id(addr);
   deallocate_frame(idx);
   addr = NULL;
@@ -181,14 +185,13 @@ void kfree(void *addr) {
 
 void demo_frame() {
   print("============== demo frame allocator ==============\n");
-  
-  void *A = kmalloc(2 * FRAME_SIZE);
-  void *B = kmalloc(1 * FRAME_SIZE);
-  void *C = kmalloc(2 * FRAME_SIZE);
-  kfree(A);
-  void *D = kmalloc(1 * FRAME_SIZE);
-  kfree(B);
-  kfree(D);
-  kfree(C);
+  void *A = frame_malloc(2 * FRAME_SIZE);
+  void *B = frame_malloc(1 * FRAME_SIZE);
+  void *C = frame_malloc(2 * FRAME_SIZE);
+  free_frame(A);
+  void *D = frame_malloc(1 * FRAME_SIZE);
+  free_frame(B);
+  free_frame(D);
+  free_frame(C);
   print("==================================================\n");
 }
