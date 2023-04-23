@@ -1,14 +1,18 @@
 #include "devtree.h"
 #include "string.h"
 #include "print.h"
+#include "mm_utils.h"
 
 uint32_t u32_to_little_endian(uint32_t num) {
   uint8_t *t = (uint8_t *)&num;
   return (t[3]) | (t[2] << 8) | (t[1] << 16) | (t[0] << 24);
 }
 
-void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)) {
+void fdt_traverse(void (*callback)(const char *, const char *, void *)) {
   printf("DTB_ADDR: %#X\n", DTB_ADDR);
+
+  // TODO: use device tree info to reserve memory
+  memory_reserve((void *)DTB_ADDR, (void *)(DTB_ADDR + 0x10000));
 
   struct fdt_header *header = (struct fdt_header *)DTB_ADDR;
 
@@ -49,7 +53,7 @@ void fdt_traverse(void (*initramfs_callback)(const char *, const char *, void *)
 
       void *prop_val = (void *)prop + sizeof(struct fdt_prop);
 
-      initramfs_callback(nodename, propname, prop_val);
+      callback(nodename, propname, prop_val);
 
       struct_addr += sizeof(struct fdt_prop) + len_val;
     }

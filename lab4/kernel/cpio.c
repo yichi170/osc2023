@@ -3,21 +3,39 @@
 #include "string.h"
 #include "print.h"
 #include "devtree.h"
+#include "mm_utils.h"
 
 #define CPIO_HEADER_MAGIC "070701"
 
 extern void core_timer_enable();
 extern void from_el1_to_el0(unsigned int, unsigned int);
 static void *INITRD_ADDR = 0;
+static void *INITRD_END = 0;
+void *initrd_end = 0;
 
-void initramfs_callback(const char *nodename, const char *propname, void *prop_val) {
+void get_ramfs_addr(const char *nodename, const char *propname, void *prop_val) {
   if (streq(nodename, "chosen") == 0 &&
       streq(propname, "linux,initrd-start") == 0) {
     uint32_t initrd_addr = u32_to_little_endian(*(uint32_t *)prop_val);
     INITRD_ADDR = (void *)initrd_addr;
     logdf("initrd addr: %#X\n", INITRD_ADDR);
   }
+  if (streq(nodename, "chosen") == 0 &&
+      streq(propname, "linux,initrd-end") == 0) {
+    uint32_t initrd_addr = u32_to_little_endian(*(uint32_t *)prop_val);
+    INITRD_END = (void *)initrd_addr;
+    initrd_end = INITRD_END;
+    logdf("initrd addr (end): %#X\n", INITRD_END);
+  }
   return;
+}
+
+void reserve_ramfs() {
+  if (INITRD_ADDR == 0 || INITRD_END == 0) {
+    printf("[WARN] cannot reserve memory for ramfs\n");
+    return;
+  }
+  memory_reserve(INITRD_ADDR, INITRD_END);
 }
 
 __attribute__ ((always_inline))

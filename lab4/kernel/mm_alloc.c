@@ -2,52 +2,13 @@
 
 #include "print.h"
 #include "string.h"
+#include "malloc.h"
 #include "page_alloc.h"
 
 #define NUM_POOLS 6
 #define NULL (void *)0
 
-// static struct mm_block* reserve_memory;
 static mm_pool_t pools[NUM_POOLS];
-
-void memory_reserve(void *start, void *end) {
-  if ((uint64_t)end <= (uint64_t)start) {
-    print("[WARN] Memory reservation failed: The specified memory address range is invalid. ");
-    printf("The starting address (%#X) must be lower than the ending address (%#X)\n",
-            (uint64_t)start, (uint64_t)end);
-    return;
-  }
-
-  // struct mm_block new_block = {start, end, NULL, NULL};
-
-  // if (reserve_memory == NULL) {
-  //   reserve_memory = new_block;
-  // } else {
-  //   struct mm_block* curr = reserve_memory;
-  //   while (curr != NULL) {
-  //     if (new_block->end < curr->start) {
-  //       new_block->prev = curr->prev;
-  //       new_block->next = curr;
-  //       if (curr->prev != NULL)
-  //         curr->prev->next = new_block;
-  //       else
-  //         reserve_memory = new_block;
-  //       curr->prev = new_block;
-  //       break;
-  //     } else if (new_block->start > curr->end) {
-  //       curr = curr->next;
-  //     } else {
-  //       curr->start = (new_block->start < curr->start) ? new_block->start : curr->start;
-  //       curr->end = (new_block->end > curr->end) ? new_block->end : curr->end;
-  //       break;
-  //     }
-  //   }
-  //   if (curr == NULL) {
-  //     new_block->prev = reserve_memory;
-  //     reserve_memory->next = new_block;
-  //   }
-  // }
-}
 
 void init_pools() {
   for (int i = 0; i < NUM_POOLS; i++) {
@@ -87,7 +48,7 @@ void mem_chunk_create(mm_pool_t *pool) {
 
 void *mem_chunk_alloc(mm_pool_t *pool) {
   page_t *page = pool->pages;
-  
+
   while (page) {
     if (page->num_free > 0) {
       for (int i = 0; i < page->num_chunk; i++) {
@@ -106,10 +67,11 @@ void *mem_chunk_alloc(mm_pool_t *pool) {
   return NULL;
 }
 
-void mem_chunk_free(page_t *page, int idx) {
+void mem_chunk_free(mm_pool_t *pool, page_t *page, int idx) {
   if ((page->bitmap[idx / 64] & (1 << idx % 64)) != 0) {
     page->bitmap[idx / 64] &= ~(1 << (idx % 64));
     page->num_free++;
+    pool->total_free++;
   }
 
   printf("[INFO] free chunk: idx=%d, size=%d, page address: %#X\n", 
@@ -121,7 +83,7 @@ void kfree(void *addr) {
   mm_pool_t *pool = &pools[page->pool_id];
   int idx = (uint64_t)(addr - (void *)page - sizeof(page_t)) / pool->chunk_size;
 
-  mem_chunk_free(page, idx);
+  mem_chunk_free(pool, page, idx);
 
   // check whether the page is still in use
   for (int i = 0; i < 2; i++) {
@@ -135,6 +97,7 @@ void kfree(void *addr) {
     if (pool_pages == page) {
       pool_pages->prev->next = pool_pages->next;
       pool_pages->next->prev = pool_pages->prev;
+      pools[page->pool_id].total_free -= pool_pages->num_chunk;
       pools[page->pool_id].pages = pool_pages->next;
       free_frame(page);
       break;
@@ -145,12 +108,12 @@ void kfree(void *addr) {
 
 void demo_pool() {
   void *A = kmalloc(32);
-  void *B = kmalloc(32);
-  void *C = kmalloc(64);
-  void *D = kmalloc(64);
   printf("[DEMO] kmalloc A: size=32, address=%#X\n", A);
+  void *B = kmalloc(32);
   printf("[DEMO] kmalloc B: size=32, address=%#X\n", B);
+  void *C = kmalloc(64);
   printf("[DEMO] kmalloc C: size=64, address=%#X\n", C);
+  void *D = kmalloc(64);
   printf("[DEMO] kmalloc D: size=64, address=%#X\n", D);
   kfree(A);
   kfree(B);

@@ -23,7 +23,7 @@ typedef struct mm_pool {
 void init_pools();
 void mem_chunk_create(mm_pool_t *);
 void *mem_chunk_alloc(mm_pool_t *);
-void mem_chunk_free(page_t *page, int idx);
+void mem_chunk_free(mm_pool_t *, page_t *, int);
 void *kmalloc(uint64_t);
 void kfree(void *);
 void demo_pool();

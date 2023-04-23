@@ -22,7 +22,8 @@ struct cpio_newc_header {
 
 typedef struct cpio_newc_header cpio_newc_header_t;
 
-void initramfs_callback(const char *, const char *, void *);
+void get_ramfs_addr(const char *, const char *, void *);
+void reserve_ramfs();
 
 void cpio_ls();
 void cpio_cat(char *, int);
