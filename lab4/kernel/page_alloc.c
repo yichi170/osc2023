@@ -7,6 +7,20 @@
 static struct frame** frame_list;
 static struct frame*  frame_array;
 
+int get_upper_free_order(int reqorder) {
+  for (int i = reqorder + 1; i <= MAX_ORDER; i++)
+    if (frame_list[MAX_ORDER - i] != NULL)
+      return i;
+  return -1;
+}
+
+void add_frame_to_list(int order, int frame_idx) {
+  if (frame_list[MAX_ORDER - order]) {
+    frame_array[frame_idx].next = frame_list[MAX_ORDER - order];
+  }
+  frame_list[MAX_ORDER - order] = &frame_array[frame_idx];
+}
+
 void init_allocator() {
   frame_array = simple_malloc(NUM_FRAME * sizeof(struct frame));
   printf("NUM_FRAME: %d\n", NUM_FRAME);
@@ -14,11 +28,16 @@ void init_allocator() {
   for (int i = 0; i < NUM_FRAME; i++) {
     frame_array[i].val = FREE_FOR_ALLOC;
     frame_array[i].index = i;
-    frame_array[i].next = NULL;
-    frame_array[i].prev = NULL;
     frame_array[i].state = ALLOCATABLE;
+    if (i % (1 << MAX_ORDER) == 0) {
+      frame_array[i].val = MAX_ORDER;
+      frame_array[i].prev = &frame_array[i - (1 << MAX_ORDER)];
+      frame_array[i].next = &frame_array[i + (1 << MAX_ORDER)];
+    } else {
+      frame_array[i].prev = NULL;
+      frame_array[i].next = NULL;
+    }
   }
-  frame_array[0].val = MAX_ORDER;
 
   frame_list = simple_malloc((MAX_ORDER + 1) * sizeof(struct frame *));
 
@@ -33,15 +52,9 @@ int allocate_frame(unsigned int reqorder) {
     return -1;
   }
 
-  int upper_free_order = -1;
   if (frame_list[MAX_ORDER - reqorder] == NULL) {
     /* search the upper free frame */
-    for (int i = reqorder + 1; i <= MAX_ORDER; i++) {
-      if (frame_list[MAX_ORDER - i] != NULL) {
-        upper_free_order = i;
-        break;
-      }
-    }
+    int upper_free_order = get_upper_free_order(reqorder);
 
     if (upper_free_order == -1) {
       printf("[ERR] It seems that no free frame can be allocated\n");
@@ -87,6 +100,96 @@ int allocate_frame(unsigned int reqorder) {
   ret->next = NULL;
 
   printf("[INFO] allocated page frame: index=%d, order=%d\n", ret->index, reqorder);
+
+  return ret->index;
+}
+
+void allocate_frame_by_id_range(int start_id, int end_id) {
+  printf("allocate frame from id: %d - %d\n", start_id, end_id);
+
+  while (start_id < end_id) {
+    int i;
+    for (i = 0; i <= MAX_ORDER; i++)
+      if (start_id + (1 << i) >= end_id || ((start_id >> i) & 0x1))
+        break;
+
+    if (start_id + (1 << i) > end_id)  --i;
+
+    allocate_frame_id_order(start_id, i);
+
+    start_id = start_id + (1 << i);
+  }
+}
+
+int allocate_frame_id_order(int id, int reqorder) {
+  if (id % (1 << reqorder) != 0) {
+    printf("[WARN] frame #%d cannot be allocated in order %d.\n",
+      id, reqorder);
+    return -1;
+  }
+
+  if (frame_array[id].state != ALLOCATABLE) {
+    printf("[WARN] frame #%d isn't allocatable\n", id);
+    return -1;
+  }
+
+  int block_idx = id;
+  int upper_order = reqorder;
+
+  while (frame_array[block_idx].val == FREE_FOR_ALLOC) {
+    int buddy_idx = block_idx ^ (1 << upper_order);
+    block_idx = (block_idx < buddy_idx) ? block_idx : buddy_idx;
+    upper_order++;
+  }
+
+  struct frame *upper_frame = &frame_array[block_idx];
+
+  while (upper_frame->val > reqorder) {
+    struct frame *l_frame = upper_frame;
+    int upper_free_order = l_frame->val;
+    if (upper_frame == frame_list[MAX_ORDER - upper_free_order])
+      frame_list[MAX_ORDER - upper_free_order] = l_frame->next;
+    else
+      upper_frame->prev->next = l_frame->next;
+    if (l_frame->next != NULL)
+      l_frame->next->prev = NULL;
+
+    int r_off = pow(2, l_frame->val - 1);
+
+    struct frame *r_frame = &frame_array[l_frame->index + r_off];
+
+    l_frame->val -= 1;
+    r_frame->val = l_frame->val;
+    l_frame->state = ALLOCATABLE;
+    r_frame->state = ALLOCATABLE;
+
+    upper_free_order--;
+
+    if (r_frame->index <= id) {
+      add_frame_to_list(upper_free_order, l_frame->index);
+      add_frame_to_list(upper_free_order, r_frame->index);
+      upper_frame = r_frame;
+    } else  {
+      add_frame_to_list(upper_free_order, r_frame->index);
+      add_frame_to_list(upper_free_order, l_frame->index);
+      upper_frame = l_frame;
+    }
+  }
+
+  int index = frame_list[MAX_ORDER - reqorder]->index;
+  for (int i = 0; i < (1 << frame_list[MAX_ORDER - reqorder]->val); i++) {
+    frame_array[index + i].state = ALLOCATED;
+  }
+
+  struct frame *ret = frame_list[MAX_ORDER - reqorder];
+  frame_list[MAX_ORDER - reqorder] = frame_list[MAX_ORDER - reqorder]->next;
+  if (frame_list[MAX_ORDER - reqorder] != NULL)
+    frame_list[MAX_ORDER - reqorder]->prev = NULL;
+
+  ret->prev = NULL;
+  ret->next = NULL;
+
+  printf("[INFO] allocate frame#%d in order#%d\n", ret->index, reqorder);
 
   return ret->index;
 }
@@ -152,16 +255,6 @@ void deallocate_frame(int idx) {
       break;
     }
   }
-}
-
-__attribute__ ((always_inline))
-inline void *id_to_mm_addr(int idx) {
-  return (void *)(MEM_START + idx * FRAME_SIZE);
-}
-
-__attribute__ ((always_inline))
-inline int mm_addr_to_id(void *mm_addr) {
-  return ((uint64_t)mm_addr - MEM_START) / FRAME_SIZE;
 }
 
 void *frame_malloc(uint64_t size) {

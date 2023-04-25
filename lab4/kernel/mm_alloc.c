@@ -25,6 +25,7 @@ void *kmalloc(uint64_t size) {
   for (int c = 32; c < size; c <<= 1, reqorder++);
   
   if (pools[reqorder].total_free == 0) {
+    printf("[INFO] allocate a page for chunk_size = %d\n", 1 << (reqorder + 5));
     mem_chunk_create(&pools[reqorder]);
   }
 

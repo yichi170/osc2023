@@ -63,5 +63,12 @@ void show_reserve() {
 }
 
 void mark_reserve_memory() {
+  struct mm_block* mm_ptr = reserve_memory;
+  while (mm_ptr) {
+    int start = mm_addr_to_id(mm_ptr->start);
+    int end = mm_addr_to_id(mm_ptr->end);
+    allocate_frame_by_id_range(start, end + 1);
 
+    mm_ptr = mm_ptr->next;
+  }
 }
