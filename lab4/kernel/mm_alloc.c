@@ -14,6 +14,8 @@ void init_pools() {
   for (int i = 0; i < NUM_POOLS; i++) {
     pools[i].chunk_size = 1 << (i + 5);
     pools[i].id = i;
+    pools[i].pages = NULL;
+    pools[i].total_free = 0;
   }
 }
 
@@ -34,6 +36,7 @@ void *kmalloc(uint64_t size) {
 
 void mem_chunk_create(mm_pool_t *pool) {
   page_t *page = frame_malloc(FRAME_SIZE);
+  page->prev = NULL;
   page->next = pool->pages;
   if (pool->pages != NULL)
     pool->pages->prev = page;
@@ -96,8 +99,11 @@ void kfree(void *addr) {
 
   while (pool_pages) {
     if (pool_pages == page) {
-      pool_pages->prev->next = pool_pages->next;
-      pool_pages->next->prev = pool_pages->prev;
+      if (pool_pages->prev)
+        pool_pages->prev->next = pool_pages->next;
+      if (pool_pages->next)
+        pool_pages->next->prev = pool_pages->prev;
+
       pools[page->pool_id].total_free -= pool_pages->num_chunk;
       pools[page->pool_id].pages = pool_pages->next;
       free_frame(page);

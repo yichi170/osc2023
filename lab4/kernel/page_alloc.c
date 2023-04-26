@@ -203,12 +203,13 @@ void deallocate_frame(int idx) {
   }
 
   int target_order = target->val;
+  printf("[INFO] try to deallocate frame#%d (order=%d)\n", idx, target_order);
 
   for (int order = target_order; order <= MAX_ORDER; order++) {
     int buddy_idx = idx ^ (1 << order);
 
     if (buddy_idx < NUM_FRAME && frame_array[buddy_idx].state == ALLOCATABLE &&
-        order < MAX_ORDER && order == target->val) {
+        order < MAX_ORDER && order == target->val && target->val == frame_array[buddy_idx].val) {
       struct frame *buddy = &frame_array[buddy_idx];
       printf("[INFO] merge frame %d with frame %d (order: %d -> %d)\n", idx, buddy_idx, order, order + 1);
 
