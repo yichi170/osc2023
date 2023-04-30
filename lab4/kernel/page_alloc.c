@@ -67,7 +67,7 @@ int allocate_frame(unsigned int reqorder) {
       frame_list[MAX_ORDER - upper_free_order] = l_frame->next;
       if (frame_list[MAX_ORDER - upper_free_order] != NULL)
         frame_list[MAX_ORDER - upper_free_order]->prev = NULL;
-      
+
       int r_off = pow(2, l_frame->val - 1);
 
       struct frame *r_frame = &frame_array[l_frame->index + r_off];
@@ -109,7 +109,7 @@ void allocate_frame_by_id_range(int start_id, int end_id) {
 
   while (start_id < end_id) {
     int i;
-    for (i = 0; i <= MAX_ORDER; i++)
+    for (i = 0; i < MAX_ORDER; i++)
       if (start_id + (1 << i) >= end_id || ((start_id >> i) & 0x1))
         break;
 
