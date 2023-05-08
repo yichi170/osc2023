@@ -21,7 +21,7 @@ void init_thread() {
 
   initial_thread = kmalloc(sizeof(struct thread_desc));
   initial_thread->start_args = (thread_start_args){ NULL };
-  initial_thread->attr = INIT_ATTR;
+  initial_thread->thread_id = 0;
   initial_thread->state = T_RUNNING;
   initial_thread->next = NULL;
   asm volatile("msr tpidr_el1, %0" : : "r"(initial_thread));
@@ -31,15 +31,14 @@ void init_thread() {
 }
 
 int thread_create(void (*func)(void *), void *args) {
-  thread_desc_t new_thread = simple_malloc(sizeof(struct thread_desc));
+  thread_desc_t new_thread = kmalloc(sizeof(struct thread_desc));
 
   thread_t t_id = thread_counter++;
   void *stack_addr = kmalloc(STACK_SIZE);
-  thread_attr_t attr = { t_id, stack_addr, STACK_SIZE };
 
   new_thread->ctx = INIT_CONTEXT;
   new_thread->start_args = (thread_start_args){ func, args };
-  new_thread->attr = attr;
+  new_thread->thread_id = t_id;
   new_thread->state = T_READY;
   new_thread->next = NULL;
 
@@ -69,11 +68,20 @@ thread_desc_t get_cur_thread() {
   return cur_thread;
 }
 
+void kill_zombies() {
+  for (int i = 0; i < MAX_NUM_THREADS; i++) {
+    if (threads[i]->state == T_TERMINATED) {
+      kfree((void *)threads[i]->ctx.sp);
+      kfree(threads[i]);
+      threads[i] = NULL;
+    }
+  }
+}
+
 void thread_dump(thread_desc_t thread) {
   if (thread != NULL) {
     print("thread info:\n");
-    printf("- id: %d\n", thread->attr.thread_id);
-    printf("- addr: %#X\n", thread->attr.stack_addr);
+    printf("- id: %d\n", thread->thread_id);
     printf("- thread_func: %#X\n", thread->start_args.start_routine);
   }
 }
@@ -96,12 +104,9 @@ void context_dump(struct context *ctx) {
   printf("-  sp: %#X\n", ctx->sp);
 }
 
-void kill_zombies() {}
-
 void idle() {
   while (1) {
     kill_zombies();
-    print("kill_zombies\n");
     schedule();
   }
 }
@@ -115,7 +120,7 @@ void foo() {
   int r;
 
   for (int i = 0; i < 10; i++) {
-    printf("thread #%d: print %d\n", cur_thread->attr.thread_id, i);
+    printf("thread #%d: print %d\n", cur_thread->thread_id, i);
     r = 1000000;
     while (r--) { asm volatile("nop"); }
     schedule();
@@ -147,7 +152,7 @@ void push_to_ready(thread_desc_t n_thread) {
     ready_queue_head = n_thread;
     ready_queue_tail = ready_queue_head;
   }
-  printf("push 'thread #%d' into queue\n", n_thread->attr.thread_id);
+  printf("push 'thread #%d' into queue\n", n_thread->thread_id);
 }
 
 thread_desc_t pop_from_ready() {
@@ -159,6 +164,6 @@ thread_desc_t pop_from_ready() {
   if (ready_queue_head == NULL) // [ready_queue_head, ready_queue_tail]
     ready_queue_tail = NULL;
   top->next = NULL;
-  printf("pop 'thread #%d' from queue\n", top->attr.thread_id);
+  printf("pop 'thread #%d' from queue\n", top->thread_id);
   return top;
 }

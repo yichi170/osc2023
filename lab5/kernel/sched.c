@@ -8,6 +8,7 @@ void schedule() {;
   thread_desc_t next_thread = pop_from_ready();
 
   if (next_thread == NULL) {
+    kill_zombies();
     __asm volatile(
       "ldr     x0, =_start\n\t"
       "mov     sp, x0\n\t"
@@ -17,7 +18,7 @@ void schedule() {;
 
   if (cur_thread->state == T_RUNNING) {
     cur_thread->state = T_READY;
-    if (cur_thread->attr.thread_id != 0)
+    if (cur_thread->thread_id != 0)
       push_to_ready(cur_thread);
   }
 

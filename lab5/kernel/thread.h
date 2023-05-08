@@ -8,7 +8,6 @@
 #define STACK_SIZE (4096 * 4)
 #define STACK_ADDR (void *)(0x3C000000)
 
-#define INIT_ATTR (thread_attr_t){ 0, NULL, 0 }
 #define INIT_CONTEXT (struct context) \
 { { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, \
   0, 0, 0 }
@@ -41,31 +40,26 @@ typedef enum {
 } thread_state_t;
 
 typedef struct {
-  int thread_id;
-  void *stack_addr;
-  uint64_t stacksize;
-} thread_attr_t;
-
-typedef struct {
   void (*start_routine)(void *);
   void *args;
 } thread_start_args;
+
+typedef uint64_t thread_t;
 
 typedef struct thread_desc* thread_desc_t;
 struct thread_desc {
   struct context ctx;
   thread_start_args start_args;
-  thread_attr_t attr;
+  thread_t thread_id;
   thread_state_t state;
   thread_desc_t next;
 };
-
-typedef uint64_t thread_t;
 
 void init_thread();
 int thread_create(void (*)(void *), void *);
 void thread_entry();
 thread_desc_t get_cur_thread();
+void kill_zombies();
 void thread_dump(thread_desc_t);
 void context_dump(struct context *);
 void demo_thread();
