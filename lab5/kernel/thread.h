@@ -45,12 +45,14 @@ typedef struct {
 } thread_start_args;
 
 typedef uint64_t thread_t;
+typedef uint64_t pid_t;
 
 typedef struct thread_desc* thread_desc_t;
 struct thread_desc {
   struct context ctx;
   thread_start_args start_args;
   thread_t thread_id;
+  void *stack_addr;
   thread_state_t state;
   thread_desc_t next;
 };
@@ -59,6 +61,8 @@ void init_thread();
 int thread_create(void (*)(void *), void *);
 void thread_entry();
 thread_desc_t get_cur_thread();
+thread_desc_t get_thread(int);
+pid_t getpid();
 void kill_zombies();
 void thread_dump(thread_desc_t);
 void context_dump(struct context *);

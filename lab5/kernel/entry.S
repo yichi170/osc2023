@@ -55,11 +55,10 @@ invalid_exception_handler:
 lower_el_sync_exception:
   msr DAIFSet, 0xf // disable interrupt
   save_all
-  mrs x0, spsr_el1
-  mrs x1, elr_el1
-  mrs x2, esr_el1
-  mov x3, 0
-  bl  print_exception
+  mrs x0, esr_el1
+  lsr x1, x0, #26
+  sub x1, x1, #0x15 // the exception is caused by svc instruction
+  cbz x1, syscall_entry
   load_all
   msr DAIFClr, 0xf // enable interrupt
   eret
@@ -81,8 +80,8 @@ irq_exception_handler:
 .align 11 // vector table should be aligned to 0x800
 .globl exception_vector_table
 exception_vector_table:
-  b invalid_exception_handler // branch to a handler function. // sync, Current EL with SP0
-  .align 7 // entry size is 0x80, .align will pad 0
+  b invalid_exception_handler // sync, Current EL with SP0
+  .align 7                    // entry size is 0x80, .align will pad 0
   b invalid_exception_handler // irq
   .align 7
   b invalid_exception_handler // fiq
@@ -99,9 +98,9 @@ exception_vector_table:
   b invalid_exception_handler // serr
   .align 7
 
-  b lower_el_sync_exception // sync, Lower EL using AArch64
+  b lower_el_sync_exception   // sync, Lower EL using AArch64
   .align 7
-  b irq_exception_handler // irq
+  b irq_exception_handler     // irq
   .align 7
   b invalid_exception_handler // fiq
   .align 7

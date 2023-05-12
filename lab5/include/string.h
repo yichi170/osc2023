@@ -3,6 +3,8 @@
 
 #include "type.h"
 
+#define memcpy __builtin_memcpy_inline
+
 int streq(const char *, const char *);
 int strneq(const char *, const char *, int);
 int strstartwith(const char *, const char *);

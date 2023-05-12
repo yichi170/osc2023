@@ -4,9 +4,12 @@ from_el2_to_el1:
     msr     hcr_el2, x0
     mov     x0, 0x345
     // 0x3c5 = 0000 0000 0000 0000 0000 0011 1100 0101
-    // unmask bit[7] (enable IRQ interrupt)
     // 0x345 = 0000 0000 0000 0000 0000 0011 0100 0101
+    // I            bits[7]            IRQ
+    // F            bits[6]            FIQ
+    // M[3:0]       bits[3:0]          Exception level and selected Stack Pointer.
     // PSTATE ARMv8 (PSRs ARMv7): https://developer.arm.com/documentation/den0024/a/ARMv8-Registers/Processor-state
+    // spsr_el1: https://developer.arm.com/documentation/ddi0595/2021-12/AArch64-Registers/SPSR-EL1--Saved-Program-Status-Register--EL1-
     msr     spsr_el2, x0
     msr     elr_el2, lr
     eret

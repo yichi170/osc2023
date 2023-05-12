@@ -30,7 +30,6 @@ void kernel_main() {
   mark_reserve_memory();
 
   init_thread();
-  demo_thread();
 
   shell();
 }

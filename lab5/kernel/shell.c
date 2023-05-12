@@ -11,6 +11,7 @@
 #include "exception.h"
 #include "mm_alloc.h"
 #include "page_alloc.h"
+#include "thread.h"
 
 #define BUF_SIZE 32
 
@@ -29,8 +30,9 @@ void print_help() {
   print("timer [start/stop]: start/shutdown timer\n");
   print("timer [test]: test timer\n");
   print("timer <msg> <sec>: set timer\n");
-  print("demo-frame: test the buddy system\n");
-  print("demo-pool: test the memory pool\n");
+  print("demo-frame: test the functionality of buddy system\n");
+  print("demo-pool: test the functionality of memory pool\n");
+  print("demo-thread: test the functionality of thread\n");
 }
 
 void print_msg(void *data) {
@@ -127,6 +129,9 @@ void shell() {
     }
     else if (streq(buf, "demo-pool") == 0) {
       demo_pool();
+    }
+    else if (streq(buf, "demo-thread") == 0) {
+      demo_thread();
     }
     else {
       printf("Command not found: %s\n", buf);

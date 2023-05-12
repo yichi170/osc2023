@@ -41,9 +41,10 @@ int thread_create(void (*func)(void *), void *args) {
   new_thread->thread_id = t_id;
   new_thread->state = T_READY;
   new_thread->next = NULL;
+  new_thread->stack_addr = stack_addr;
 
   new_thread->ctx.cregs.x28 = t_id;
-  new_thread->ctx.sp = (uint64_t)stack_addr;
+  new_thread->ctx.sp = (uint64_t)(stack_addr + STACK_SIZE);
   new_thread->ctx.lr = (uint64_t)thread_entry;
 
   threads[t_id % MAX_NUM_THREADS] = new_thread;
@@ -66,6 +67,16 @@ thread_desc_t get_cur_thread() {
   struct context *cur_context = get_context();
   thread_desc_t cur_thread = (thread_desc_t)cur_context;
   return cur_thread;
+}
+
+thread_desc_t get_thread(int t_id) {
+  return threads[t_id];
+}
+
+pid_t getpid() {
+  pid_t pid = get_cur_thread()->thread_id;
+  printf("pid: %d\n", pid);
+  return pid;
 }
 
 void kill_zombies() {
