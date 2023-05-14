@@ -5,19 +5,43 @@
 #include "mailbox.h"
 #include "print.h"
 
-int exec(const char *name, char *const argv[]) {}
+uint32_t sys_uart_recv(char buf[], uint32_t size) {
+  int i;
+  char ch;
+  for (i = 0; i < size; i++) {
+    ch = uart_recv();
+    buf[i] = ch;
+    if (ch == '\0') break;
+  }
+  return i;
+}
 
-void exit() {}
+uint32_t sys_uart_send(const char buf[], uint32_t size) {
+  int i;
+  for (i = 0; i < size; i++) {
+    if (buf[i] == '\0') break;
+    putc(buf[i]);
+  }
+  return i;
+}
 
-void kill(int pid) {}
+int sys_exec(const char *name, char *const argv[]) {}
+
+void sys_exit() {}
+
+int sys_mbox_call(unsigned char channel, volatile unsigned int *mbox) {
+  return mailbox_call(channel, mbox);
+}
+
+void sys_kill(int pid) {}
 
 const void *const syscall_table[] = {
-  getpid,
-  uart_recv,
-  uart_send,
-  exec,
-  fork,
-  exit,
-  mailbox_call, // need to modify the interface
-  kill
+  sys_getpid,
+  sys_uart_recv,
+  sys_uart_send,
+  sys_exec,
+  sys_fork,
+  sys_exit,
+  sys_mbox_call, // need to modify the interface
+  sys_kill
 };

@@ -4,7 +4,7 @@
 
 #define NULL (void *)0
 
-int fork() {
+int sys_fork() {
   thread_desc_t parent_thread = get_cur_thread();
   thread_t child_tid = thread_create(NULL, NULL);
   thread_desc_t child_thread = get_thread(child_tid);

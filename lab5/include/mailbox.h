@@ -22,7 +22,7 @@
 #define TAG_REQUEST_CODE    0x00000000
 #define END_TAG             0x00000000
 
-int mailbox_call(unsigned char);
+int mailbox_call(unsigned char, volatile unsigned int *);
 void get_board_revision();
 void get_arm_memory();
 

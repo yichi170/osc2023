@@ -62,7 +62,7 @@ int thread_create(void (*)(void *), void *);
 void thread_entry();
 thread_desc_t get_cur_thread();
 thread_desc_t get_thread(int);
-pid_t getpid();
+pid_t sys_getpid();
 void kill_zombies();
 void thread_dump(thread_desc_t);
 void context_dump(struct context *);

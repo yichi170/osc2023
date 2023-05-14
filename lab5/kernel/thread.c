@@ -73,7 +73,7 @@ thread_desc_t get_thread(int t_id) {
   return threads[t_id];
 }
 
-pid_t getpid() {
+pid_t sys_getpid() {
   pid_t pid = get_cur_thread()->thread_id;
   printf("pid: %d\n", pid);
   return pid;
