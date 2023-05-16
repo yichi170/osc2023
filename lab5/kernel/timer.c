@@ -1,5 +1,5 @@
 #include "timer.h"
-
+#include "sched.h"
 #include "malloc.h"
 #include "print.h"
 
@@ -23,7 +23,7 @@ uint64_t get_freq() {
 
 void set_timeout(uint64_t timeout) {
   __asm volatile(
-    "msr cntp_tval_el0, %0\n\t"
+    "msr cntp_cval_el0, %0\n\t"
     :: "r" (timeout)
   );
 }
@@ -60,15 +60,17 @@ void add_timer(void (*callback)(void *), void *data, uint64_t timeout) {
     set_timeout(new_event->timeout);
 }
 
-void print_timer_irq() {
+void log_timer_irq() {
   uint64_t freq = get_freq();
   uint64_t cnt = get_timer();
-  print("===== timer IRQ info =====\n");
-  printf("Current time: %#X\n", cnt / freq);
+  logd("===== timer IRQ info =====\n");
+  logdf("Current time: %#X\n", cnt / freq);
 }
 
 
 void el1_timer_irq_handler() {
+  round_robin_scheduler();
+
   if (time_events == (void *)0) {
     uint64_t time;
     __asm volatile(
@@ -77,7 +79,7 @@ void el1_timer_irq_handler() {
       "msr cntp_tval_el0, x2\n\t"
       "mrs %0, cntpct_el0\n\t": "=r" (time)
     );
-    print_timer_irq();
+    log_timer_irq();
     return;
   }
 

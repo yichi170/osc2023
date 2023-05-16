@@ -128,39 +128,39 @@ void cpio_cat(char *command, int len) {
   }
 }
 
-void execute_usrprogram(char *file) {
-  char *addr = INITRD_ADDR;
+char *cpio_find_file(char *file) {
+  char *ptr = INITRD_ADDR;
   char *new_addr;
-  char *program_addr = (char *)addr;
+  char *program_addr = ptr;
   char filename[2 * sizeof("TRAILER!!!")];
-  char exec_file[2 * sizeof("TRAILER!!!")];
   while (1) {
-    new_addr = cpio_list_one(addr, filename);
+    new_addr = cpio_list_one(ptr, filename);
     if (new_addr == (char *)0)
       break;
     if (streq(file, filename) == 0) {
-      cpio_newc_header_t *file_header = (cpio_newc_header_t *)addr;
+      cpio_newc_header_t *file_header = (cpio_newc_header_t *)ptr;
       uint32_t filename_size = get_name_size(file_header);
 
       if ((filename_size + sizeof(cpio_newc_header_t)) % 4 != 0) {
         filename_size += 4 - ((filename_size + sizeof(cpio_newc_header_t)) & 3);
       }
 
-      addr += sizeof(cpio_newc_header_t) + filename_size;
-      program_addr = (void *)(addr);
+      program_addr = ptr + sizeof(cpio_newc_header_t) + filename_size;
       logdf("program_addr: %#X\n", program_addr);
-      strcpy(exec_file, filename);
+      return program_addr;
     }
-    addr = new_addr;
+    ptr = new_addr;
   }
+  return NULL;
+}
 
-  if (streq(file, exec_file) != 0) {
+void execute_usrprogram(char *file) {
+  char *program_addr = cpio_find_file(file);
+
+  if (program_addr == NULL) {
     printf("no such file or directory: %s\n", file);
     return;
   }
-
-  logdf("found %s in the file system, and ready to execute it\n", file);
-  logdf("program_addr 2: %#X\n", program_addr);
 
   core_timer_enable();
   from_el1_to_el0((unsigned int)program_addr, 0x40000);

@@ -16,7 +16,7 @@ core_timer_irq_handler:
   mrs x2, cntfrq_el0
   add x2, x2, x2
   msr cntp_tval_el0, x2
-  bl  print_timer_irq // void print_timer_irq(uint64_t frq_timer, uint64_t cnt_timer)
+  bl  log_timer_irq // void log_timer_irq(uint64_t frq_timer, uint64_t cnt_timer)
   ret
 
 .globl core_timer_disable

@@ -14,6 +14,7 @@ void schedule() {;
       "mov     sp, x0\n\t"
       "bl      shell\n\t"
     );
+    return; // TODO: modify this if block. return or jump to shell?
   }
 
   if (cur_thread->state == T_RUNNING) {
@@ -27,4 +28,8 @@ void schedule() {;
     next_thread->state = T_RUNNING;
     switch_context(&cur_thread->ctx, &next_thread->ctx);
   }
+}
+
+void round_robin_scheduler() {
+  schedule();
 }

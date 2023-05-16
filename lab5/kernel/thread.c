@@ -24,6 +24,7 @@ void init_thread() {
   initial_thread->thread_id = 0;
   initial_thread->state = T_RUNNING;
   initial_thread->next = NULL;
+  initial_thread->kstack = kmalloc(STACK_SIZE);
   asm volatile("msr tpidr_el1, %0" : : "r"(initial_thread));
 
   threads[0] = initial_thread;
@@ -35,13 +36,15 @@ int thread_create(void (*func)(void *), void *args) {
 
   thread_t t_id = thread_counter++;
   void *stack_addr = kmalloc(STACK_SIZE);
+  void *user_stack_addr = kmalloc(STACK_SIZE);
 
   new_thread->ctx = INIT_CONTEXT;
   new_thread->start_args = (thread_start_args){ func, args };
   new_thread->thread_id = t_id;
   new_thread->state = T_READY;
   new_thread->next = NULL;
-  new_thread->stack_addr = stack_addr;
+  new_thread->kstack = stack_addr;
+  new_thread->ustack = user_stack_addr;
 
   new_thread->ctx.cregs.x28 = t_id;
   new_thread->ctx.sp = (uint64_t)(stack_addr + STACK_SIZE);
@@ -71,12 +74,6 @@ thread_desc_t get_cur_thread() {
 
 thread_desc_t get_thread(int t_id) {
   return threads[t_id];
-}
-
-pid_t sys_getpid() {
-  pid_t pid = get_cur_thread()->thread_id;
-  printf("pid: %d\n", pid);
-  return pid;
 }
 
 void kill_zombies() {
@@ -177,4 +174,33 @@ thread_desc_t pop_from_ready() {
   top->next = NULL;
   printf("pop 'thread #%d' from queue\n", top->thread_id);
   return top;
+}
+
+void remove_from_ready(int tid) {
+  if (ready_queue_head == NULL) {
+    printf("failed to kill thread #%d\n", tid);
+    return;
+  }
+
+  if (ready_queue_head->thread_id == tid) {
+    ready_queue_head = ready_queue_head->next;
+    if (ready_queue_head == NULL)
+      ready_queue_tail = NULL;
+    return;
+  }
+
+  thread_desc_t ptr_prev = ready_queue_head;
+  thread_desc_t ptr = ready_queue_head->next;
+
+  while (ptr != NULL) {
+    if (ptr->thread_id == tid) {
+      ptr_prev->next = ptr->next;
+      if (ptr_prev->next == NULL)
+        ready_queue_tail = ptr_prev;
+      return;
+    }
+    ptr = ptr->next;
+    ptr_prev = ptr_prev->next;
+  }
+  printf("failed to kill thread #%d\n", tid);
 }

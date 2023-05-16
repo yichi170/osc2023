@@ -27,13 +27,17 @@ uint32_t sys_uart_send(const char buf[], uint32_t size) {
 
 int sys_exec(const char *name, char *const argv[]) {}
 
-void sys_exit() {}
+void sys_exit() {
+  exit_process();
+}
 
 int sys_mbox_call(unsigned char channel, volatile unsigned int *mbox) {
   return mailbox_call(channel, mbox);
 }
 
-void sys_kill(int pid) {}
+void sys_kill(int pid) {
+  kill_process(pid);
+}
 
 const void *const syscall_table[] = {
   sys_getpid,

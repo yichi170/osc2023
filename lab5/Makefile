@@ -1,13 +1,18 @@
 .PHONY: all clean
 
-all: build/kernel8.img
+all: build
 
 clean: 
 	rm -r build
 
-build/kernel8.img: kernel/* lib/* include/*
+build: kernel/* lib/* include/*
 	mkdir -p build
-	cmake -B build
+	cmake -B build -DNDEBUG=TRUE
+	make -C build
+
+build-v: kernel/* lib/* include/*
+	mkdir -p build
+	cmake -B build -DNDEBUG=FALSE
 	make -C build
 
 run: run-kernel

@@ -63,6 +63,11 @@ lower_el_sync_exception:
   msr DAIFClr, 0xf // enable interrupt
   eret
 
+.globl back_to_user_space
+back_to_user_space:
+  load_all
+  eret
+
 el1_irq_exception_handler:
   save_all
   bl c_el1_irq_handler
