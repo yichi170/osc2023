@@ -8,9 +8,9 @@
 
 struct trap_frame {
   uint64_t x[31]; // general registers from x0 - x30
-  uint64_t sp_el0;
   uint64_t spsr_el1;
   uint64_t elr_el1;
+  uint64_t sp_el0;
 };
 
 typedef uint64_t pid_t;

@@ -11,14 +11,6 @@ core_timer_enable:
   str w0, [x1] // unmask timer interrupt
   ret
 
-.globl core_timer_irq_handler
-core_timer_irq_handler:
-  mrs x2, cntfrq_el0
-  add x2, x2, x2
-  msr cntp_tval_el0, x2
-  bl  log_timer_irq // void log_timer_irq(uint64_t frq_timer, uint64_t cnt_timer)
-  ret
-
 .globl core_timer_disable
 core_timer_disable:
   mov x0, 0

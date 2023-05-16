@@ -27,6 +27,6 @@ void reserve_ramfs();
 
 void cpio_ls();
 void cpio_cat(char *, int);
-void execute_usrprogram(char *);
+int sys_exec(const char *, char *const []);
 
 #endif

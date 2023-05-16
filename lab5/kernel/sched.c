@@ -3,18 +3,14 @@
 
 extern void switch_context(struct context *, struct context *);
 
-void schedule() {;
+void schedule() {
   thread_desc_t cur_thread = get_cur_thread();
   thread_desc_t next_thread = pop_from_ready();
 
   if (next_thread == NULL) {
     kill_zombies();
-    __asm volatile(
-      "ldr     x0, =_start\n\t"
-      "mov     sp, x0\n\t"
-      "bl      shell\n\t"
-    );
-    return; // TODO: modify this if block. return or jump to shell?
+    switch_context(&cur_thread->ctx, &initial_thread->ctx);
+    return;
   }
 
   if (cur_thread->state == T_RUNNING) {

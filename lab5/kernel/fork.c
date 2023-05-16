@@ -1,10 +1,13 @@
 #include "fork.h"
 #include "thread.h"
 #include "string.h"
+#include "print.h"
 
 void child_process_entry() {
   struct trap_frame *cur_trapframe = get_trap_frame(get_cur_thread());
   cur_trapframe->x[0] = 0;
+
+  printf("[child_process] pid: %d @child_process_entry\n", get_cur_thread()->thread_id);
 
   // move to user space
   asm volatile(

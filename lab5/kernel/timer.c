@@ -61,23 +61,18 @@ void add_timer(void (*callback)(void *), void *data, uint64_t timeout) {
 }
 
 void log_timer_irq() {
-  uint64_t freq = get_freq();
-  uint64_t cnt = get_timer();
   logd("===== timer IRQ info =====\n");
-  logdf("Current time: %#X\n", cnt / freq);
+  logdf("Current time: %#X\n", get_timer() / get_freq());
 }
 
-
-void el1_timer_irq_handler() {
+void timer_irq_handler() {
   round_robin_scheduler();
 
   if (time_events == (void *)0) {
-    uint64_t time;
     __asm volatile(
       "mrs x2, cntfrq_el0\n\t"
       "add x2, x2, x2\n\t"
       "msr cntp_tval_el0, x2\n\t"
-      "mrs %0, cntpct_el0\n\t": "=r" (time)
     );
     log_timer_irq();
     return;

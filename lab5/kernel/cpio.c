@@ -1,5 +1,6 @@
 #include "cpio.h"
-
+#include "thread.h"
+#include "process.h"
 #include "string.h"
 #include "print.h"
 #include "devtree.h"
@@ -128,7 +129,7 @@ void cpio_cat(char *command, int len) {
   }
 }
 
-char *cpio_find_file(char *file) {
+char *cpio_find_file(const char *file) {
   char *ptr = INITRD_ADDR;
   char *new_addr;
   char *program_addr = ptr;
@@ -154,14 +155,20 @@ char *cpio_find_file(char *file) {
   return NULL;
 }
 
-void execute_usrprogram(char *file) {
+int sys_exec(const char *file, char *const argv[]) {
   char *program_addr = cpio_find_file(file);
 
   if (program_addr == NULL) {
     printf("no such file or directory: %s\n", file);
-    return;
+    return -1;
   }
 
-  core_timer_enable();
-  from_el1_to_el0((unsigned int)program_addr, 0x40000);
+  thread_desc_t thread = get_cur_thread();
+  struct trap_frame *tf = get_trap_frame(thread);
+
+  // reset the general purpose registers
+  memset(tf->x, 0, sizeof(tf->x));
+  // reset the elr_el1
+  tf->elr_el1 = (uint64_t)program_addr;
+  return 0;
 }

@@ -1,6 +1,7 @@
 #include "syscall.h"
-#include "thread.h"
+#include "process.h"
 #include "mini_uart.h"
+#include "cpio.h"
 #include "fork.h"
 #include "mailbox.h"
 #include "print.h"
@@ -24,8 +25,6 @@ uint32_t sys_uart_send(const char buf[], uint32_t size) {
   }
   return i;
 }
-
-int sys_exec(const char *name, char *const argv[]) {}
 
 void sys_exit() {
   exit_process();

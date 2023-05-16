@@ -75,10 +75,17 @@ void gpu_interrupt_handler() {
   }
 }
 
-void print_exception(uint64_t spsr, uint64_t elr, uint64_t esr, uint64_t invalid) {
+void print_exception(uint64_t invalid) {
   if (invalid == 1)
     print("Unexpected exception\n");
   print("===== exception info =====\n");
+  uint64_t spsr, elr, esr;
+  asm volatile(
+    "mrs %0, spsr_el1\n\t"
+    "mrs %1, elr_el1\n\t"
+    "mrs %2, esr_el1\n\t"
+    : "=r" (spsr), "=r" (elr), "=r" (esr)
+  );
   printf("spsr_el1:\t%#X\n", spsr);
   printf("elr_el1:\t%#X\n", elr);
   printf("esr_el1:\t%#X\n", esr);
@@ -90,7 +97,8 @@ void c_el1_irq_handler() { // el1
     gpu_interrupt_handler();
   } else if (irq_src & (1 << 1)) { // CNTPNSIRQ interrupt
     __asm volatile("msr DAIFSet, 0xf\t\n");
-    el1_timer_irq_handler();
+    logd("el1 timer irq\n");
+    timer_irq_handler();
     __asm volatile("msr DAIFClr, 0xf\t\n");
   } else {
     print("Unknown interrupt\n");
@@ -103,8 +111,8 @@ void c_el0_irq_handler() { // el0
   if (irq_src & (1 << 8)) { // GPU interrupt
     print("GPU interrupt\n");
   } else if (irq_src & (1 << 1)) { // CNTPNSIRQ interrupt
-    print("el0 timer irq\n");
-    core_timer_irq_handler();
+    logd("el0 timer irq\n");
+    timer_irq_handler();
   } else {
     print("Unknown interrupt\n");
   }

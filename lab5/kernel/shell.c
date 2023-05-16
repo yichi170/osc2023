@@ -12,6 +12,7 @@
 #include "mm_alloc.h"
 #include "page_alloc.h"
 #include "thread.h"
+#include "fork.h"
 
 #define BUF_SIZE 32
 
@@ -84,7 +85,13 @@ void shell() {
     }
     else if (strstartwith(buf, "exec ") == 0) {
       char *file = buf + 5;
-      execute_usrprogram(file);
+      pid_t pid = sys_fork();
+      if (pid == 0) {
+        printf("child process\n");
+        sys_exec(file, NULL);
+      } else {
+        printf("parent process\n");
+      }
     }
     else if (streq(buf, "test_async") == 0) {
       print("test async: expected output = Hello World\n");

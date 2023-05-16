@@ -16,11 +16,17 @@
     stp x24, x25, [sp ,16 * 12]
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
-    str x30, [sp, 16 * 15]
+    mrs x19, spsr_el1
+    mrs x20, elr_el1
+    stp x30, x19, [sp, 16 * 15]
+    str x20, [sp, 16 * 16]
 .endm
 
 // load general registers from stack
 .macro load_all
+    ldp x19, x20, [sp ,16 * 15 + 8]
+    msr spsr_el1, x19
+    msr elr_el1, x20
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -43,10 +49,7 @@
 invalid_exception_handler:
   msr DAIFSet, 0xf // disable interrupt
   save_all
-  mrs x0, spsr_el1
-  mrs x1, elr_el1
-  mrs x2, esr_el1
-  mov x3, 1
+  mov x0, 1
   bl  print_exception
   load_all
   msr DAIFClr, 0xf // enable interrupt

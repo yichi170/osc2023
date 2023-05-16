@@ -11,6 +11,6 @@ void async_print(const char *);
 unsigned int async_read(char *, unsigned int);
 
 void c_el1_irq_handler();
-void print_exception(uint64_t, uint64_t, uint64_t, uint64_t);
+void print_exception(uint64_t);
 
 #endif

@@ -5,7 +5,7 @@
 #include "sched.h"
 
 static int thread_counter = 0;
-static thread_desc_t initial_thread = NULL;
+thread_desc_t initial_thread = NULL;
 static thread_desc_t ready_queue_head = NULL;
 static thread_desc_t ready_queue_tail = NULL;
 static thread_desc_t threads[MAX_NUM_THREADS];

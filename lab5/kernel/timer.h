@@ -13,7 +13,7 @@ struct timer_event {
 typedef struct timer_event timer_event_t;
 
 void add_timer(void (*)(void *), void *, uint64_t);
-void el1_timer_irq_handler();
+void timer_irq_handler();
 void log_timer_irq();
 
 #endif

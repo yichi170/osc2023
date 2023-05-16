@@ -57,6 +57,8 @@ struct thread_desc {
   thread_desc_t next;
 };
 
+extern thread_desc_t initial_thread;
+
 void init_thread();
 int thread_create(void (*)(void *), void *);
 void thread_entry();
