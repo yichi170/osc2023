@@ -3,6 +3,7 @@
 #include "mm_alloc.h"
 #include "print.h"
 #include "sched.h"
+#include "shell.h"
 
 static int thread_counter = 0;
 thread_desc_t initial_thread = NULL;
@@ -20,15 +21,34 @@ void init_thread() {
     threads[i] = NULL;
 
   initial_thread = kmalloc(sizeof(struct thread_desc));
+
+  initial_thread->ctx = INIT_CONTEXT;
   initial_thread->start_args = (thread_start_args){ NULL };
   initial_thread->thread_id = 0;
   initial_thread->state = T_RUNNING;
   initial_thread->next = NULL;
-  initial_thread->kstack = kmalloc(STACK_SIZE);
+  void *stack_addr = kmalloc(STACK_SIZE);
+  initial_thread->kstack = stack_addr;
+
+  initial_thread->ctx.sp = (uint64_t)(stack_addr + STACK_SIZE);
+  initial_thread->ctx.lr = (uint64_t)shell;
   asm volatile("msr tpidr_el1, %0" : : "r"(initial_thread));
 
   threads[0] = initial_thread;
   ++thread_counter;
+}
+
+void start_initial_thread() {
+  // By directly setting the sp & lr,
+  // the kernel can save the correct context,
+  // allowing the scheduler to accurately perform its tasks
+  asm volatile(
+    "mov sp, %0\n\t"
+    "mov lr, %1\n\t"
+    ::
+    "r"(initial_thread->ctx.sp),
+    "r"(initial_thread->ctx.lr)
+  );
 }
 
 int thread_create(void (*func)(void *), void *args) {
@@ -79,8 +99,9 @@ thread_desc_t get_thread(int t_id) {
 void kill_zombies() {
   for (int i = 0; i < MAX_NUM_THREADS; i++) {
     if (threads[i]->state == T_TERMINATED) {
-      kfree((void *)threads[i]->ctx.sp);
-      kfree(threads[i]);
+      kfree(threads[i]->kstack);
+      kfree(threads[i]->ustack);
+      kfree((void *)threads[i]);
       threads[i] = NULL;
     }
   }
@@ -112,14 +133,6 @@ void context_dump(struct context *ctx) {
   printf("-  sp: %#X\n", ctx->sp);
 }
 
-void idle() {
-  while (1) {
-    kill_zombies();
-    if (ready_queue_head == NULL) break;
-    schedule();
-  }
-}
-
 /* ------------------------------------ *
  *                 DEMO                 *
  * ------------------------------------ */
@@ -140,7 +153,6 @@ void demo_thread() {
   for (int i = 0; i < 2; i++) {
     thread_create(foo, NULL);
   }
-  idle();
 }
 
 /* ------------------------------------ *

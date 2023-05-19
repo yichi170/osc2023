@@ -60,6 +60,8 @@ struct thread_desc {
 extern thread_desc_t initial_thread;
 
 void init_thread();
+void start_initial_thread();
+
 int thread_create(void (*)(void *), void *);
 void thread_entry();
 thread_desc_t get_cur_thread();

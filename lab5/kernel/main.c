@@ -6,6 +6,7 @@
 #include "mm_utils.h"
 #include "thread.h"
 #include "shell.h"
+#include "sched.h"
 
 extern void set_exception_vector_table();
 extern void core_timer_enable();
@@ -30,6 +31,5 @@ void kernel_main() {
   mark_reserve_memory();
 
   init_thread();
-
-  shell();
+  start_initial_thread();
 }
