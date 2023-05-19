@@ -83,7 +83,7 @@ void shell() {
       }
       cpio_cat(start, files - start);
     }
-    else if (strstartwith(buf, "exec ") == 0) {
+    else if (strstartwith(buf, "exec ") == 0) { // fork & exec should be called from el0
       char *file = buf + 5;
       pid_t pid = sys_fork();
       if (pid == 0) {

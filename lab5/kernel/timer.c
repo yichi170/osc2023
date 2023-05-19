@@ -66,7 +66,7 @@ void log_timer_irq() {
 }
 
 void timer_irq_handler() {
-  round_robin_scheduler();
+  schedule();
 
   if (time_events == (void *)0) {
     __asm volatile(

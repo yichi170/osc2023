@@ -19,7 +19,7 @@ void kernel_main() {
 
   fdt_traverse(get_ramfs_addr);
   reserve_ramfs();
-  // core_timer_enable();
+  core_timer_enable();
 
   init_allocator();
   init_pools();

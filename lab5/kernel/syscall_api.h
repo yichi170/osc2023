@@ -15,12 +15,12 @@
 #include "type.h"
 
 int getpid();
-uint32_t uartread(char [], size_t);
-uint32_t uartwrite(const char [], size_t);
+uint32_t uartread(char [], uint32_t);
+uint32_t uartwrite(const char [], uint32_t);
 int exec(const char *, char *const []);
 int fork();
 void exit(int);
-int mbox_call(unsigned char, unsigned int *);
+int mbox_call(unsigned char, volatile unsigned int *);
 void kill(int);
 
 #endif

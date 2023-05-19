@@ -13,4 +13,7 @@ unsigned int async_read(char *, unsigned int);
 void c_el1_irq_handler();
 void print_exception(uint64_t);
 
+void enable_interrupt();
+void disable_interrupt();
+
 #endif

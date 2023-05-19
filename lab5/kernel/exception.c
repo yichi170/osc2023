@@ -96,10 +96,8 @@ void c_el1_irq_handler() { // el1
   if (irq_src & (1 << 8)) { // GPU interrupt
     gpu_interrupt_handler();
   } else if (irq_src & (1 << 1)) { // CNTPNSIRQ interrupt
-    __asm volatile("msr DAIFSet, 0xf\t\n");
     logd("el1 timer irq\n");
     timer_irq_handler();
-    __asm volatile("msr DAIFClr, 0xf\t\n");
   } else {
     print("Unknown interrupt\n");
   }
@@ -117,4 +115,13 @@ void c_el0_irq_handler() { // el0
     print("Unknown interrupt\n");
   }
   return;
+}
+
+// these two regs can control four bits of interrupt mask (DAIF)
+void enable_interrupt() {
+  asm volatile("msr DAIFClr, 0xf\n\t");
+}
+
+void disable_interrupt() {
+  asm volatile("msr DAIFSet, 0xf\n\t");
 }

@@ -21,9 +21,7 @@ void kill_process(int pid) {
 }
 
 pid_t sys_getpid() {
-  pid_t pid = get_cur_thread()->thread_id;
-  logdf("pid: %d\n", pid);
-  return pid;
+  return get_cur_thread()->thread_id;
 }
 
 void copy_trap_frame(thread_desc_t dst_thread, thread_desc_t src_thread) {

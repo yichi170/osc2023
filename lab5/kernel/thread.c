@@ -115,6 +115,7 @@ void context_dump(struct context *ctx) {
 void idle() {
   while (1) {
     kill_zombies();
+    if (ready_queue_head == NULL) break;
     schedule();
   }
 }
@@ -160,7 +161,7 @@ void push_to_ready(thread_desc_t n_thread) {
     ready_queue_head = n_thread;
     ready_queue_tail = ready_queue_head;
   }
-  printf("push 'thread #%d' into queue\n", n_thread->thread_id);
+  logdf("push 'thread #%d' into queue\n", n_thread->thread_id);
 }
 
 thread_desc_t pop_from_ready() {
@@ -172,7 +173,7 @@ thread_desc_t pop_from_ready() {
   if (ready_queue_head == NULL) // [ready_queue_head, ready_queue_tail]
     ready_queue_tail = NULL;
   top->next = NULL;
-  printf("pop 'thread #%d' from queue\n", top->thread_id);
+  logdf("pop 'thread #%d' from queue\n", top->thread_id);
   return top;
 }
 

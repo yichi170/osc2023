@@ -47,23 +47,19 @@
 .endm
 
 invalid_exception_handler:
-  msr DAIFSet, 0xf // disable interrupt
   save_all
   mov x0, 1
   bl  print_exception
   load_all
-  msr DAIFClr, 0xf // enable interrupt
   eret
 
 lower_el_sync_exception:
-  msr DAIFSet, 0xf // disable interrupt
   save_all
   mrs x0, esr_el1
   lsr x1, x0, #26
   sub x1, x1, #0x15 // the exception is caused by svc instruction
   cbz x1, syscall_entry
   load_all
-  msr DAIFClr, 0xf // enable interrupt
   eret
 
 .globl back_to_user_space
@@ -78,11 +74,9 @@ el1_irq_exception_handler:
   eret
 
 irq_exception_handler:
-  msr DAIFSet, 0xf // disable interrupt
   save_all
   bl c_el0_irq_handler
   load_all
-  msr DAIFClr, 0xf // enable interrupt
   eret
 
 .align 11 // vector table should be aligned to 0x800
