@@ -1,6 +1,6 @@
 // save general registers to stack
 .macro save_all
-    sub sp, sp, 32 * 8
+    sub sp, sp, 34 * 8
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -43,7 +43,7 @@
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, 34 * 8
 .endm
 
 invalid_exception_handler:
@@ -55,10 +55,25 @@ invalid_exception_handler:
 
 lower_el_sync_exception:
   save_all
-  mrs x0, esr_el1
-  lsr x1, x0, #26
-  sub x1, x1, #0x15 // the exception is caused by svc instruction
-  cbz x1, syscall_entry
+  mrs x20, esr_el1
+  lsr x19, x20, #26
+  sub x19, x19, #0x15 // the exception is caused by svc instruction
+  cbz x19, syscall_entry
+  load_all
+  eret
+
+.extern syscall_table
+
+.globl syscall_entry
+syscall_entry:
+  adr    x19, syscall_table
+  bl     enable_interrupt
+  lsl    x20, x8, #3    // multiply x8 by 8 to get the offset in bytes
+  add    x19, x19, x20
+  ldr    x20, [x19]
+  blr    x20            // branch to target syscall function
+  str    x0, [sp]
+  bl     disable_interrupt
   load_all
   eret
 

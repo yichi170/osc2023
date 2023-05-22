@@ -20,5 +20,6 @@ void kill_process(int);
 pid_t sys_getpid();
 void copy_trap_frame(thread_desc_t, thread_desc_t);
 struct trap_frame *get_trap_frame(thread_desc_t);
+void demo_syscall();
 
 #endif

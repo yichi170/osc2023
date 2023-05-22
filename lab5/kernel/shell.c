@@ -85,13 +85,7 @@ void shell() {
     }
     else if (strstartwith(buf, "exec ") == 0) { // fork & exec should be called from el0
       char *file = buf + 5;
-      pid_t pid = sys_fork();
-      if (pid == 0) {
-        printf("child process\n");
-        sys_exec(file, NULL);
-      } else {
-        printf("parent process\n");
-      }
+      // cpio_exec(file);
     }
     else if (streq(buf, "test_async") == 0) {
       print("test async: expected output = Hello World\n");
@@ -139,6 +133,9 @@ void shell() {
     }
     else if (streq(buf, "demo-thread") == 0) {
       demo_thread();
+    }
+    else if (streq(buf, "demo-syscall") == 0) {
+      demo_syscall();
     }
     else {
       printf("Command not found: %s\n", buf);

@@ -1,6 +1,6 @@
 #include "thread.h"
 #include "malloc.h"
-#include "mm_alloc.h"
+#include "page_alloc.h"
 #include "print.h"
 #include "sched.h"
 #include "shell.h"
@@ -20,14 +20,14 @@ void init_thread() {
   for (int i = 0; i < MAX_NUM_THREADS; i++)
     threads[i] = NULL;
 
-  initial_thread = kmalloc(sizeof(struct thread_desc));
+  initial_thread = frame_malloc(sizeof(struct thread_desc));
 
   initial_thread->ctx = INIT_CONTEXT;
   initial_thread->start_args = (thread_start_args){ NULL };
   initial_thread->thread_id = 0;
   initial_thread->state = T_RUNNING;
   initial_thread->next = NULL;
-  void *stack_addr = kmalloc(STACK_SIZE);
+  void *stack_addr = frame_malloc(STACK_SIZE);
   initial_thread->kstack = stack_addr;
 
   initial_thread->ctx.sp = (uint64_t)(stack_addr + STACK_SIZE);
@@ -52,11 +52,11 @@ void start_initial_thread() {
 }
 
 int thread_create(void (*func)(void *), void *args) {
-  thread_desc_t new_thread = kmalloc(sizeof(struct thread_desc));
+  thread_desc_t new_thread = frame_malloc(sizeof(struct thread_desc));
 
   thread_t t_id = thread_counter++;
-  void *stack_addr = kmalloc(STACK_SIZE);
-  void *user_stack_addr = kmalloc(STACK_SIZE);
+  void *stack_addr = frame_malloc(STACK_SIZE);
+  void *user_stack_addr = frame_malloc(STACK_SIZE);
 
   new_thread->ctx = INIT_CONTEXT;
   new_thread->start_args = (thread_start_args){ func, args };
@@ -93,15 +93,16 @@ thread_desc_t get_cur_thread() {
 }
 
 thread_desc_t get_thread(int t_id) {
+  // if (tid >= MAX_NUM_THREADS) return NULL;
   return threads[t_id];
 }
 
 void kill_zombies() {
   for (int i = 0; i < MAX_NUM_THREADS; i++) {
     if (threads[i]->state == T_TERMINATED) {
-      kfree(threads[i]->kstack);
-      kfree(threads[i]->ustack);
-      kfree((void *)threads[i]);
+      free_frame(threads[i]->kstack);
+      free_frame(threads[i]->ustack);
+      free_frame((void *)threads[i]);
       threads[i] = NULL;
     }
   }

@@ -20,7 +20,6 @@ void kernel_main() {
 
   fdt_traverse(get_ramfs_addr);
   reserve_ramfs();
-  core_timer_enable();
 
   init_allocator();
   init_pools();
@@ -31,5 +30,6 @@ void kernel_main() {
   mark_reserve_memory();
 
   init_thread();
+  core_timer_enable();
   start_initial_thread();
 }
